@@ -4,12 +4,15 @@ A **free, lightweight Perplexity-style AI research assistant** with answers powe
 
 ---
 
-## 🚀 Recent Releases (v0.2.0)
+## 🚀 Recent Releases (v0.2.2)
 
-We have just released **v0.2.0**! You can find the latest installers for Windows, macOS, and Android on our **[GitHub Releases page](https://github.com/Dilomi09/research-AI/releases)**.
+We have just released **v0.2.2**! You can find the latest installers for Windows, macOS, and Android on our **[GitHub Releases page](https://github.com/Dilomi09/research-AI/releases)**.
 
 - 🪟 **Windows**: `.exe` installer available.
 - 🍏 **macOS**: `.dmg` file for Apple Silicon and Intel.
+> [!WARNING]  
+> If macOS says the app is "damaged and can't be opened," this is a strict Apple security measure for unsigned apps, not a broken file. Open your Terminal and run:  
+> `xattr -cr /Applications/research-AI.app`
 - 🤖 **Android**: `.apk` debug build for testing.
 
 ---
