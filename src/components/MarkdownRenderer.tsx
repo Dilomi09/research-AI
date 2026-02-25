@@ -44,7 +44,7 @@ export function MarkdownRenderer({ content, citations }: { content: string, cita
   }
 
   return (
-    <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none prose-headings:font-medium prose-a:text-blue-500 hover:prose-a:text-blue-600 dark:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 prose-pre:bg-zinc-100 dark:prose-pre:bg-zinc-900 prose-pre:border prose-pre:border-zinc-200 dark:prose-pre:border-zinc-800">
+    <div className="prose prose-sm md:prose-base dark:prose-invert max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-a:text-blue-500 hover:prose-a:text-blue-600 dark:prose-a:text-blue-400 dark:hover:prose-a:text-blue-300 prose-pre:bg-zinc-100 dark:prose-pre:bg-zinc-900 prose-pre:border prose-pre:border-black/5 dark:prose-pre:border-white/5 prose-pre:shadow-sm prose-img:rounded-xl prose-img:shadow-sm">
       <ReactMarkdown 
         remarkPlugins={[remarkGfm]}
         components={{

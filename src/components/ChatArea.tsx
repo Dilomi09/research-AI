@@ -4,6 +4,7 @@ import { useStore, Message } from '../lib/store';
 import { searchWithPerplexity, searchWithTavily, synthesizeWithOpenRouter } from '../lib/api';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { TableOfContents } from './TableOfContents';
+import { motion, AnimatePresence } from 'motion/react';
 import clsx from 'clsx';
 
 const MODELS = [
@@ -248,9 +249,16 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
           className="flex-1 overflow-y-auto p-4 md:p-6 pb-32 scroll-smooth"
         >
           <div className="max-w-3xl mx-auto space-y-8">
-            {currentChat?.messages.map((msg) => (
-              <div key={msg.id} className={clsx("flex flex-col group", msg.role === 'user' ? 'items-end' : 'items-start')}>
-                {msg.role === 'user' ? (
+            <AnimatePresence initial={false}>
+              {currentChat?.messages.map((msg) => (
+                <motion.div 
+                  key={msg.id} 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+                  className={clsx("flex flex-col group", msg.role === 'user' ? 'items-end' : 'items-start')}
+                >
+                  {msg.role === 'user' ? (
                   <div className="flex items-center space-x-2 max-w-[85%]">
                     <button
                       onClick={() => handleEdit(msg.id, msg.content)}
@@ -259,26 +267,26 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
                     >
                       <Pencil size={14} />
                     </button>
-                    <div className="bg-zinc-200 dark:bg-zinc-800/80 text-zinc-900 dark:text-zinc-100 px-5 py-3.5 rounded-3xl rounded-tr-sm text-[15px] leading-relaxed shadow-sm">
+                    <div className="bg-white dark:bg-[#222222] text-zinc-900 dark:text-zinc-100 px-5 py-3.5 rounded-3xl rounded-tr-sm text-[15px] leading-relaxed shadow-sm ring-1 ring-black/5 dark:ring-white/5">
                       {msg.content}
                     </div>
                   </div>
                 ) : (
                   <div className="w-full">
                     {msg.status === 'searching' && (
-                      <div className="flex items-center space-x-3 text-blue-500 mb-3 font-medium text-sm bg-blue-50 dark:bg-blue-500/10 w-fit px-4 py-2 rounded-full">
+                      <div className="flex items-center space-x-3 text-blue-500 mb-3 font-medium text-sm bg-white dark:bg-[#222222] ring-1 ring-black/5 dark:ring-white/5 shadow-sm w-fit px-4 py-2 rounded-full">
                         <Search size={14} className="animate-pulse" />
                         <span>Searching the web with {searchProvider === 'tavily' ? 'Tavily' : 'Perplexity'}...</span>
                       </div>
                     )}
                     {msg.status === 'synthesizing' && (
-                      <div className="flex items-center space-x-3 text-purple-500 mb-3 font-medium text-sm bg-purple-50 dark:bg-purple-500/10 w-fit px-4 py-2 rounded-full">
+                      <div className="flex items-center space-x-3 text-purple-500 mb-3 font-medium text-sm bg-white dark:bg-[#222222] ring-1 ring-black/5 dark:ring-white/5 shadow-sm w-fit px-4 py-2 rounded-full">
                         <Sparkles size={14} className="animate-pulse" />
                         <span>Synthesizing answer with {openRouterModel}...</span>
                       </div>
                     )}
                     {msg.status === 'error' && (
-                      <div className="flex items-center space-x-3 text-red-500 mb-3 font-medium text-sm bg-red-50 dark:bg-red-500/10 w-fit px-4 py-2 rounded-full">
+                      <div className="flex items-center space-x-3 text-red-500 mb-3 font-medium text-sm bg-white dark:bg-[#222222] ring-1 ring-black/5 dark:ring-white/5 shadow-sm w-fit px-4 py-2 rounded-full">
                         <AlertCircle size={14} />
                         <span>Error occurred</span>
                       </div>
@@ -296,7 +304,7 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
                               <span>View Search Context</span>
                             </button>
                             {expandedSearch === msg.id && (
-                              <div className="mt-3 p-4 bg-white dark:bg-[#111] rounded-xl border border-zinc-200 dark:border-zinc-800/50 max-h-80 overflow-y-auto font-mono text-[11px] text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap shadow-sm">
+                              <div className="mt-3 p-4 bg-white dark:bg-[#111] rounded-xl border border-black/5 dark:border-white/5 max-h-80 overflow-y-auto font-mono text-[11px] text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap shadow-inner">
                                 {msg.searchResults}
                               </div>
                             )}
@@ -305,7 +313,7 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
                         <MarkdownRenderer content={msg.content} citations={msg.citations} />
                         
                         {msg.citations && msg.citations.length > 0 && (
-                          <div className="mt-6 pt-4 border-t border-zinc-200 dark:border-zinc-800/50">
+                          <div className="mt-6 pt-4 border-t border-black/5 dark:border-white/5">
                             <h4 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider mb-3 flex items-center">
                               <LinkIcon size={12} className="mr-1.5" /> Sources
                             </h4>
@@ -319,11 +327,12 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
                                       href={url} 
                                       target="_blank" 
                                       rel="noopener noreferrer"
-                                      className="inline-flex items-center px-2.5 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg text-xs text-zinc-600 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500/50 dark:hover:border-blue-500/50 transition-all shadow-sm max-w-[200px]"
+                                      className="group inline-flex items-center px-3 py-2 bg-white dark:bg-[#222222] border border-black/5 dark:border-white/5 rounded-xl text-xs text-zinc-600 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500/30 dark:hover:border-blue-500/30 hover:shadow-md transition-all max-w-[220px]"
                                       title={url}
                                     >
-                                      <span className="mr-2 text-[10px] bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 w-4 h-4 rounded-full flex items-center justify-center shrink-0">{i + 1}</span>
-                                      <span className="truncate">{domain}</span>
+                                      <span className="mr-2 text-[10px] bg-[#F9F9F9] dark:bg-[#111111] text-zinc-500 dark:text-zinc-400 w-5 h-5 rounded-full flex items-center justify-center shrink-0 group-hover:bg-blue-50 dark:group-hover:bg-blue-500/10 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{i + 1}</span>
+                                      <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=16`} alt="" className="w-3.5 h-3.5 mr-2 rounded-sm opacity-70 group-hover:opacity-100 transition-opacity shrink-0" />
+                                      <span className="truncate font-medium">{domain}</span>
                                     </a>
                                   );
                                 } catch (e) {
@@ -337,9 +346,10 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
                     )}
                   </div>
                 )}
-              </div>
+              </motion.div>
             ))}
-            <div ref={messagesEndRef} className="h-4" />
+            </AnimatePresence>
+            <div ref={messagesEndRef} className="h-48 shrink-0" />
           </div>
         </div>
 
@@ -350,8 +360,13 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
       </div>
 
       {/* Floating Input Area */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-zinc-50 via-zinc-50 to-transparent dark:from-zinc-950 dark:via-zinc-950 dark:to-transparent pointer-events-none">
-        <div className="max-w-3xl mx-auto relative pointer-events-auto">
+      <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-zinc-50 via-zinc-50/90 to-transparent dark:from-zinc-950 dark:via-zinc-950/90 dark:to-transparent pointer-events-none z-20">
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.1, duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+          className="max-w-3xl mx-auto relative pointer-events-auto"
+        >
           <div className="flex items-center space-x-2 mb-3">
             <div className="relative" ref={dropdownRef}>
               <button
@@ -421,7 +436,7 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="relative flex items-end shadow-lg rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+          <form onSubmit={handleSubmit} className="relative flex items-end shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] rounded-3xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-800/50 transition-all focus-within:ring-2 focus-within:ring-blue-500/20">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -432,7 +447,7 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
                 }
               }}
               placeholder="Ask anything..."
-              className="w-full bg-transparent rounded-2xl pl-5 pr-14 py-4 text-[15px] text-zinc-900 dark:text-zinc-100 focus:outline-none resize-none min-h-[56px] max-h-48 placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
+              className="w-full bg-transparent rounded-3xl pl-6 pr-14 py-4 text-[15px] text-zinc-900 dark:text-zinc-100 focus:outline-none resize-none min-h-[56px] max-h-48 placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
               rows={1}
               style={{
                 height: 'auto',
@@ -462,12 +477,12 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
               </button>
             )}
           </form>
-          <div className="text-center mt-3">
-            <span className="text-[11px] text-zinc-400 dark:text-zinc-500 font-medium">
-              AI can make mistakes. Check important info.
-            </span>
-          </div>
-        </div>
+            <div className="text-center mt-3">
+              <span className="text-[11px] text-zinc-400 dark:text-zinc-500 font-medium tracking-wide">
+                AI can make mistakes. Check important info.
+              </span>
+            </div>
+        </motion.div>
       </div>
     </div>
   );

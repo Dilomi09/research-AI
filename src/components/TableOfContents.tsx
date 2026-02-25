@@ -62,11 +62,11 @@ export function TableOfContents({ messages }: { messages: Message[] }) {
   if (items.length === 0) return null;
 
   return (
-    <div className="hidden xl:block w-64 shrink-0 pl-6 border-l border-zinc-200 dark:border-zinc-800/50 overflow-y-auto h-full py-6">
-      <h3 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider mb-4">
+    <div className="hidden xl:block w-64 shrink-0 pl-6 border-l border-black/5 dark:border-white/5 overflow-y-auto h-full py-6">
+      <h3 className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-4">
         On this page
       </h3>
-      <ul className="space-y-2.5">
+      <ul className="space-y-2">
         {items.map((item, index) => (
           <li 
             key={`${item.id}-${index}`}
@@ -79,7 +79,7 @@ export function TableOfContents({ messages }: { messages: Message[] }) {
                 document.getElementById(item.id)?.scrollIntoView({ behavior: 'smooth' });
               }}
               className={clsx(
-                "block text-sm transition-colors truncate",
+                "block text-[13px] transition-colors truncate",
                 activeId === item.id 
                   ? "text-blue-600 dark:text-blue-400 font-medium" 
                   : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
