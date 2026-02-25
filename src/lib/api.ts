@@ -1,0 +1,81 @@
+export async function searchWithPerplexity(apiKey: string, prompt: string) {
+  const res = await fetch('https://api.perplexity.ai/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey.trim()}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'sonar',
+      messages: [
+        { role: 'system', content: 'You are a search assistant. Provide detailed, factual information to answer the user query.' },
+        { role: 'user', content: prompt }
+      ]
+    })
+  });
+  
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error?.message || `Perplexity API error: ${res.status}`);
+  }
+  
+  return res.json();
+}
+
+export async function synthesizeWithOpenRouter(
+  apiKey: string, 
+  model: string, 
+  prompt: string, 
+  searchResults: string,
+  onChunk: (text: string) => void
+) {
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey.trim()}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': window.location.origin,
+      'X-Title': 'Mac AI Search'
+    },
+    body: JSON.stringify({
+      model: model,
+      messages: [
+        { role: 'system', content: "You are a helpful expert assistant. Answer the user's query using the provided search results. The search results contain citation numbers like [1], [2]. You MUST include these citations in your response to indicate where the information came from. Be comprehensive, clear, and format your response in Markdown." },
+        { role: 'user', content: `User Query: ${prompt}\n\nSearch Results Context:\n${searchResults}` }
+      ],
+      stream: true
+    })
+  });
+  
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error?.message || `OpenRouter API error: ${res.status}`);
+  }
+  
+  const reader = res.body?.getReader();
+  if (!reader) throw new Error('No reader available');
+  
+  const decoder = new TextDecoder();
+  let done = false;
+  
+  while (!done) {
+    const { value, done: doneReading } = await reader.read();
+    done = doneReading;
+    if (value) {
+      const chunkValue = decoder.decode(value, { stream: true });
+      const lines = chunkValue.split('\n').filter(line => line.trim() !== '');
+      for (const line of lines) {
+        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.choices && data.choices[0].delta && data.choices[0].delta.content) {
+              onChunk(data.choices[0].delta.content);
+            }
+          } catch (e) {
+            // Ignore parse errors for incomplete chunks
+          }
+        }
+      }
+    }
+  }
+}
