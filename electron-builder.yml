@@ -1,0 +1,13 @@
+appId: com.researchai.app
+productName: research-AI
+files:
+  - dist/**
+  - electron/**
+asar: true
+mac:
+  target:
+    - dmg
+  category: public.app-category.productivity
+win:
+  target:
+    - nsis

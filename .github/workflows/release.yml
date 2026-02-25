@@ -1,0 +1,66 @@
+name: Build release artifacts
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  windows-exe:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm install --no-save electron@37 electron-builder@25
+      - run: npx electron-builder --config electron-builder.yml --win nsis --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: research-ai-windows-exe
+          path: dist/*.exe
+
+  macos-dmg:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm install --no-save electron@37 electron-builder@25
+      - run: npx electron-builder --config electron-builder.yml --mac dmg --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: research-ai-macos-dmg
+          path: dist/*.dmg
+
+  android-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - run: npm ci
+      - run: npm run build
+      - run: npm install --no-save @capacitor/cli@7 @capacitor/core@7 @capacitor/android@7
+      - run: npx cap add android
+      - run: npx cap sync android
+      - run: cd android && ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: research-ai-android-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
