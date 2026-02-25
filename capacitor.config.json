@@ -1,0 +1,6 @@
+{
+  "appId": "com.researchai.app",
+  "appName": "research-AI",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}
