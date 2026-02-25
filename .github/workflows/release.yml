@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      - run: npm ci || npm ci || npm ci
       - run: npm run build
       - run: npm install --no-save electron@37 electron-builder@25
       - run: npx electron-builder --config electron-builder.yml --win nsis --publish never
@@ -35,7 +35,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      - run: npm ci || npm ci || npm ci
       - run: npm run build
       - run: npm install --no-save electron@37 electron-builder@25
       - run: npx electron-builder --config electron-builder.yml --mac dmg --publish never
@@ -57,7 +57,7 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: android-actions/setup-android@v3
-      - run: npm ci
+      - run: npm ci || npm ci || npm ci
       - run: npm run build
       - run: npm install --no-save @capacitor/cli@7 @capacitor/core@7 @capacitor/android@7
       - run: npx cap add android
@@ -74,10 +74,23 @@ jobs:
     needs: [windows-exe, macos-dmg, android-apk]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/download-artifact@v4
         continue-on-error: true
         with:
           path: release-assets
+      - name: Generate Changelog
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -z "$PREV_TAG" ]; then
+            echo "### Changelog" > CHANGELOG.txt
+            git log --pretty=format:"* %s (%h)" >> CHANGELOG.txt
+          else
+            echo "### Changelog since $PREV_TAG" > CHANGELOG.txt
+            git log ${PREV_TAG}..HEAD --pretty=format:"* %s (%h)" >> CHANGELOG.txt
+          fi
       - name: Publish GitHub release with assets
         uses: softprops/action-gh-release@v2
         with:
@@ -86,5 +99,5 @@ jobs:
             release-assets/research-ai-windows-exe/*.exe
             release-assets/research-ai-macos-dmg/*.dmg
             release-assets/research-ai-android-apk/*.apk
-          generate_release_notes: true
+          body_path: CHANGELOG.txt
           fail_on_unresolved_entities: false

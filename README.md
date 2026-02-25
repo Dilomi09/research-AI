@@ -4,9 +4,9 @@ A **free, lightweight Perplexity-style AI research assistant** with answers powe
 
 ---
 
-## 🚀 Recent Releases (v0.2.2)
+## 🚀 Recent Releases (v0.2.3)
 
-We have just released **v0.2.2**! You can find the latest installers for Windows, macOS, and Android on our **[GitHub Releases page](https://github.com/Dilomi09/research-AI/releases)**.
+We have just released **v0.2.3**! You can find the latest installers for Windows, macOS, and Android on our **[GitHub Releases page](https://github.com/Dilomi09/research-AI/releases)**.
 
 - 🪟 **Windows**: `.exe` installer available.
 - 🍏 **macOS**: `.dmg` file for Apple Silicon and Intel.

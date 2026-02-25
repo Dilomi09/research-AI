@@ -6,7 +6,8 @@ files:
 asar: true
 mac:
   target:
-    - dmg
+    - target: dmg
+      arch: universal
   category: public.app-category.productivity
 win:
   target:
