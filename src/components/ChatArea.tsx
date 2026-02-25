@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Search, Sparkles, AlertCircle, Link as LinkIcon, ChevronDown, Check, Square, Pencil, Download, ChevronRight } from 'lucide-react';
-import { useStore, Message } from '../lib/store';
+import { Send, Search, Sparkles, AlertCircle, Link as LinkIcon, ChevronDown, Check, Square, Pencil, Download, ChevronRight, Menu, Paperclip, X } from 'lucide-react';
+import { useStore, Message, Attachment } from '../lib/store';
 import { searchWithPerplexity, searchWithTavily, synthesizeWithOpenRouter } from '../lib/api';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { TableOfContents } from './TableOfContents';
@@ -13,9 +13,10 @@ const MODELS = [
   { id: 'moonshotai/kimi-k2.5', name: 'Kimi K2.5', description: 'Best for long context', price: '$$$' },
   { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash', description: 'Best for speed and reasoning', price: '$$$$' },
   { id: 'minimax/minimax-m2.5', name: 'Minimax m2.5', description: 'Best for creative writing', price: '$$' },
+  { id: 'custom', name: 'Custom Model...', description: 'Enter any OpenRouter model ID', price: '?' },
 ];
 
-export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
+export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () => void, onMenuClick: () => void }) {
   const { 
     chats, 
     currentChatId, 
@@ -39,10 +40,12 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [expandedSearch, setExpandedSearch] = useState<string | null>(null);
   const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const currentChat = chats.find(c => c.id === currentChatId);
@@ -70,9 +73,50 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newAttachments: Attachment[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const isText = file.type.startsWith('text/') || file.name.endsWith('.md') || file.name.endsWith('.csv') || file.name.endsWith('.json');
+      
+      try {
+        const data = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = reject;
+          if (isText) {
+            reader.readAsText(file);
+          } else {
+            reader.readAsDataURL(file);
+          }
+        });
+
+        newAttachments.push({
+          id: crypto.randomUUID(),
+          name: file.name,
+          type: file.type,
+          data,
+          isText
+        });
+      } catch (err) {
+        console.error("Error reading file:", err);
+      }
+    }
+
+    setAttachments(prev => [...prev, ...newAttachments]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments(prev => prev.filter(a => a.id !== id));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isProcessing) return;
+    if ((!input.trim() && attachments.length === 0) || isProcessing) return;
 
     if (!openRouterKey) {
       alert('Please configure your OpenRouter API key in Settings first.');
@@ -101,6 +145,7 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
       id: crypto.randomUUID(),
       role: 'user',
       content: input.trim(),
+      attachments: attachments.length > 0 ? [...attachments] : undefined
     };
 
     const assistantMessageId = crypto.randomUUID();
@@ -114,6 +159,7 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
     addMessage(activeChatId, userMessage);
     addMessage(activeChatId, assistantMessage);
     setInput('');
+    setAttachments([]);
     setIsProcessing(true);
     setIsAutoScrollEnabled(true);
 
@@ -227,11 +273,19 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-zinc-50 dark:bg-zinc-950 h-full relative overflow-hidden">
+      <div className="flex-1 flex flex-col bg-zinc-50 dark:bg-zinc-950 h-full relative overflow-hidden">
       <div className="h-14 border-b border-zinc-200 dark:border-zinc-800/50 flex items-center justify-between px-4 md:px-6 shrink-0 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-md z-10">
-        <h2 className="font-medium text-zinc-900 dark:text-zinc-100 truncate pr-4 text-sm">
-          {currentChat?.title}
-        </h2>
+        <div className="flex items-center space-x-3 overflow-hidden">
+          <button
+            onClick={onMenuClick}
+            className="md:hidden p-1.5 -ml-1.5 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          >
+            <Menu size={18} />
+          </button>
+          <h2 className="font-medium text-zinc-900 dark:text-zinc-100 truncate pr-4 text-sm">
+            {currentChat?.title}
+          </h2>
+        </div>
         <button
           onClick={handleExport}
           className="p-1.5 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
@@ -268,6 +322,16 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
                       <Pencil size={14} />
                     </button>
                     <div className="bg-white dark:bg-[#222222] text-zinc-900 dark:text-zinc-100 px-5 py-3.5 rounded-3xl rounded-tr-sm text-[15px] leading-relaxed shadow-sm ring-1 ring-black/5 dark:ring-white/5">
+                      {msg.attachments && msg.attachments.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {msg.attachments.map(att => (
+                            <div key={att.id} className="flex items-center space-x-1.5 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                              <Paperclip size={12} />
+                              <span className="truncate max-w-[150px]">{att.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       {msg.content}
                     </div>
                   </div>
@@ -375,7 +439,7 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
                 className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-full text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-sm"
               >
                 <span className="truncate max-w-[120px]">
-                  {MODELS.find(m => m.id === openRouterModel)?.name || 'Select Model'}
+                  {MODELS.find(m => m.id === openRouterModel)?.name || (openRouterModel ? 'Custom Model' : 'Select Model')}
                 </span>
                 <ChevronDown size={14} className="text-zinc-400" />
               </button>
@@ -387,12 +451,16 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
                       <button
                         key={model.id}
                         onClick={() => {
-                          setOpenRouterModel(model.id);
+                          if (model.id === 'custom') {
+                            onOpenSettings();
+                          } else {
+                            setOpenRouterModel(model.id);
+                          }
                           setIsModelDropdownOpen(false);
                         }}
                         className={clsx(
                           "w-full text-left px-3 py-2.5 rounded-xl flex items-start justify-between group transition-colors",
-                          openRouterModel === model.id 
+                          (openRouterModel === model.id || (model.id === 'custom' && !MODELS.find(m => m.id === openRouterModel && m.id !== 'custom')))
                             ? "bg-blue-50 dark:bg-blue-500/10" 
                             : "hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
                         )}
@@ -401,7 +469,7 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
                           <div className="flex items-center justify-between mb-1">
                             <span className={clsx(
                               "text-sm font-medium",
-                              openRouterModel === model.id ? "text-blue-600 dark:text-blue-400" : "text-zinc-900 dark:text-zinc-100"
+                              (openRouterModel === model.id || (model.id === 'custom' && !MODELS.find(m => m.id === openRouterModel && m.id !== 'custom'))) ? "text-blue-600 dark:text-blue-400" : "text-zinc-900 dark:text-zinc-100"
                             )}>
                               {model.name}
                             </span>
@@ -411,7 +479,7 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
                             {model.description}
                           </p>
                         </div>
-                        {openRouterModel === model.id && (
+                        {(openRouterModel === model.id || (model.id === 'custom' && !MODELS.find(m => m.id === openRouterModel && m.id !== 'custom'))) && (
                           <Check size={16} className="text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
                         )}
                       </button>
@@ -436,46 +504,76 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="relative flex items-end shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] rounded-3xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-800/50 transition-all focus-within:ring-2 focus-within:ring-blue-500/20">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSubmit(e);
-                }
-              }}
-              placeholder="Ask anything..."
-              className="w-full bg-transparent rounded-3xl pl-6 pr-14 py-4 text-[15px] text-zinc-900 dark:text-zinc-100 focus:outline-none resize-none min-h-[56px] max-h-48 placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
-              rows={1}
-              style={{
-                height: 'auto',
-              }}
-              onInput={(e) => {
-                const target = e.target as HTMLTextAreaElement;
-                target.style.height = 'auto';
-                target.style.height = `${Math.min(target.scrollHeight, 192)}px`;
-              }}
-            />
-            {isProcessing ? (
+          <form onSubmit={handleSubmit} className="relative flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] rounded-3xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-800/50 transition-all focus-within:ring-2 focus-within:ring-blue-500/20">
+            {attachments.length > 0 && (
+              <div className="flex flex-wrap gap-2 px-4 pt-4 pb-1">
+                {attachments.map(att => (
+                  <div key={att.id} className="flex items-center space-x-1.5 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                    <Paperclip size={12} />
+                    <span className="truncate max-w-[150px]">{att.name}</span>
+                    <button type="button" onClick={() => removeAttachment(att.id)} className="ml-1 hover:text-red-500 transition-colors">
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="relative flex items-end w-full">
+              <input 
+                type="file" 
+                multiple 
+                ref={fileInputRef} 
+                onChange={handleFileSelect} 
+                className="hidden" 
+              />
               <button
                 type="button"
-                onClick={handleStop}
-                className="absolute right-2.5 bottom-2.5 p-2 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-white transition-colors"
-                title="Stop generating"
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute left-2.5 bottom-2.5 p-2 rounded-xl text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                title="Attach files"
               >
-                <Square size={16} className="fill-current" />
+                <Paperclip size={18} />
               </button>
-            ) : (
-              <button
-                type="submit"
-                disabled={!input.trim()}
-                className="absolute right-2.5 bottom-2.5 p-2 rounded-xl bg-blue-600 text-white disabled:opacity-50 disabled:bg-zinc-200 dark:disabled:bg-zinc-800 transition-colors"
-              >
-                <Send size={16} />
-              </button>
-            )}
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit(e);
+                  }
+                }}
+                placeholder="Ask anything..."
+                className="w-full bg-transparent rounded-3xl pl-12 pr-14 py-4 text-[15px] text-zinc-900 dark:text-zinc-100 focus:outline-none resize-none min-h-[56px] max-h-48 placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
+                rows={1}
+                style={{
+                  height: 'auto',
+                }}
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = 'auto';
+                  target.style.height = `${Math.min(target.scrollHeight, 192)}px`;
+                }}
+              />
+              {isProcessing ? (
+                <button
+                  type="button"
+                  onClick={handleStop}
+                  className="absolute right-2.5 bottom-2.5 p-2 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-white transition-colors"
+                  title="Stop generating"
+                >
+                  <Square size={16} className="fill-current" />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={!input.trim() && attachments.length === 0}
+                  className="absolute right-2.5 bottom-2.5 p-2 rounded-xl bg-blue-600 text-white disabled:opacity-50 disabled:bg-zinc-200 dark:disabled:bg-zinc-800 transition-colors"
+                >
+                  <Send size={16} />
+                </button>
+              )}
+            </div>
           </form>
             <div className="text-center mt-3">
               <span className="text-[11px] text-zinc-400 dark:text-zinc-500 font-medium tracking-wide">

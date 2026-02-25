@@ -1,28 +1,54 @@
-import { MessageSquare, Plus, Settings, Trash2 } from 'lucide-react';
+import { MessageSquare, Plus, Settings, Trash2, X } from 'lucide-react';
 import { useStore } from '../lib/store';
 import clsx from 'clsx';
 
-export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
+export function Sidebar({ isOpen, onClose, onOpenSettings }: { isOpen: boolean; onClose: () => void; onOpenSettings: () => void }) {
   const { chats, currentChatId, createChat, setCurrentChatId, deleteChat } = useStore();
 
   return (
-    <div className="w-64 bg-[#F9F9F9] dark:bg-[#111111] border-r border-black/5 dark:border-white/5 flex flex-col h-full shrink-0">
-      <div className="p-4 flex items-center justify-between">
-        <h1 className="font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight text-sm">Mac AI Search</h1>
-        <button
-          onClick={() => createChat()}
-          className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
-          title="New Chat"
-        >
-          <Plus size={16} className="text-zinc-600 dark:text-zinc-400" />
-        </button>
-      </div>
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/20 dark:bg-black/40 z-40 md:hidden"
+          onClick={onClose}
+        />
+      )}
 
-      <div className="flex-1 overflow-y-auto px-3 py-2 space-y-0.5">
-        {chats.map((chat) => (
-          <div
-            key={chat.id}
-            onClick={() => setCurrentChatId(chat.id)}
+      <div className={clsx(
+        "fixed inset-y-0 left-0 z-50 w-64 bg-[#F9F9F9] dark:bg-[#111111] border-r border-black/5 dark:border-white/5 flex flex-col h-full shrink-0 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0",
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      )}>
+        <div className="p-4 flex items-center justify-between">
+          <h1 className="font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight text-sm">Mac AI Search</h1>
+          <div className="flex items-center space-x-1">
+            <button
+              onClick={() => {
+                createChat();
+                if (window.innerWidth < 768) onClose();
+              }}
+              className="p-1.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
+              title="New Chat"
+            >
+              <Plus size={16} className="text-zinc-600 dark:text-zinc-400" />
+            </button>
+            <button
+              onClick={onClose}
+              className="md:hidden p-1.5 hover:bg-black/5 dark:hover:bg-white/10 rounded-lg transition-colors"
+            >
+              <X size={16} className="text-zinc-600 dark:text-zinc-400" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-3 py-2 space-y-0.5">
+          {chats.map((chat) => (
+            <div
+              key={chat.id}
+              onClick={() => {
+                setCurrentChatId(chat.id);
+                if (window.innerWidth < 768) onClose();
+              }}
             className={clsx(
               'group flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all duration-200',
               currentChatId === chat.id
@@ -62,5 +88,6 @@ export function Sidebar({ onOpenSettings }: { onOpenSettings: () => void }) {
         </button>
       </div>
     </div>
+    </>
   );
 }

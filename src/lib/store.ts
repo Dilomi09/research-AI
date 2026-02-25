@@ -1,6 +1,14 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export interface Attachment {
+  id: string;
+  name: string;
+  type: string;
+  data: string; // base64 or raw text
+  isText: boolean;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -8,6 +16,7 @@ export interface Message {
   citations?: string[];
   searchResults?: string;
   status?: 'searching' | 'synthesizing' | 'done' | 'error';
+  attachments?: Attachment[];
 }
 
 export interface Chat {

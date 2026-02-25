@@ -56,7 +56,7 @@ export async function searchWithTavily(apiKey: string, prompt: string, isDeepRes
 export async function synthesizeWithOpenRouter(
   apiKey: string, 
   model: string, 
-  messages: {role: 'user' | 'assistant' | 'system', content: string}[], 
+  messages: {role: 'user' | 'assistant' | 'system', content: string, attachments?: any[]}[], 
   searchResults: string,
   systemPrompt: string,
   onChunk: (text: string) => void,
@@ -66,12 +66,37 @@ export async function synthesizeWithOpenRouter(
   
   const finalSystemPrompt = systemPrompt.trim() || defaultSystemPrompt;
 
+  // Format messages to include attachments
+  const formattedMessages = messages.map(msg => {
+    if (msg.attachments && msg.attachments.length > 0) {
+      const contentParts: any[] = [{ type: "text", text: msg.content }];
+      for (const att of msg.attachments) {
+        if (att.isText) {
+          contentParts[0].text += `\n\n--- File: ${att.name} ---\n${att.data}`;
+        } else {
+          contentParts.push({
+            type: "image_url",
+            image_url: { url: att.data }
+          });
+        }
+      }
+      return { role: msg.role, content: contentParts };
+    }
+    return { role: msg.role, content: msg.content };
+  });
+
   // Append search results to the last user message
-  const formattedMessages = [...messages];
   if (searchResults && formattedMessages.length > 0) {
     const lastMessage = formattedMessages[formattedMessages.length - 1];
     if (lastMessage.role === 'user') {
-      lastMessage.content = `User Query: ${lastMessage.content}\n\nSearch Results Context:\n${searchResults}`;
+      if (typeof lastMessage.content === 'string') {
+        lastMessage.content = `User Query: ${lastMessage.content}\n\nSearch Results Context:\n${searchResults}`;
+      } else if (Array.isArray(lastMessage.content)) {
+        const textPart = lastMessage.content.find((p: any) => p.type === 'text');
+        if (textPart) {
+          textPart.text = `User Query: ${textPart.text}\n\nSearch Results Context:\n${searchResults}`;
+        }
+      }
     }
   }
 

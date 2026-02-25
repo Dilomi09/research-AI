@@ -112,16 +112,33 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
               OpenRouter Model
             </label>
             <select
-              value={localModel}
-              onChange={(e) => setLocalModel(e.target.value)}
-              className="w-full px-3.5 py-2.5 border border-zinc-300 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-sm"
+              value={['arcee-ai/trinity-large-preview:free', 'z-ai/glm-5', 'moonshotai/kimi-k2.5', 'google/gemini-3-flash-preview', 'minimax/minimax-m2.5'].includes(localModel) ? localModel : 'custom'}
+              onChange={(e) => {
+                if (e.target.value === 'custom') {
+                  setLocalModel('');
+                } else {
+                  setLocalModel(e.target.value);
+                }
+              }}
+              className="w-full px-3.5 py-2.5 border border-zinc-300 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-sm mb-2"
             >
               <option value="arcee-ai/trinity-large-preview:free">Trinity Large (Free)</option>
               <option value="z-ai/glm-5">GLM-5</option>
               <option value="moonshotai/kimi-k2.5">Kimi K2.5</option>
               <option value="google/gemini-3-flash-preview">Gemini 3 Flash</option>
               <option value="minimax/minimax-m2.5">Minimax m2.5</option>
+              <option value="custom">Custom Model...</option>
             </select>
+            
+            {!['arcee-ai/trinity-large-preview:free', 'z-ai/glm-5', 'moonshotai/kimi-k2.5', 'google/gemini-3-flash-preview', 'minimax/minimax-m2.5'].includes(localModel) && (
+              <input
+                type="text"
+                value={localModel}
+                onChange={(e) => setLocalModel(e.target.value)}
+                className="w-full px-3.5 py-2.5 border border-zinc-300 dark:border-zinc-700 rounded-xl bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-sm"
+                placeholder="e.g. anthropic/claude-3-opus"
+              />
+            )}
           </div>
 
           <div>
