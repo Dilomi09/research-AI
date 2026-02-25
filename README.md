@@ -10,7 +10,7 @@ A **free, lightweight Perplexity-style AI research assistant** with answers powe
 - [Tech Stack](#tech-stack)
 - [Download and Install](#download-and-install)
 - [Contributing](#contributing)
-- [License](#license)
+
 
 ---
 
