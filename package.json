@@ -1,7 +1,8 @@
 {
-  "name": "react-example",
+  "name": "research-ai",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.2.0",
+  "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
@@ -33,6 +34,8 @@
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "autoprefixer": "^10.4.21",
+    "electron": "^37.10.3",
+    "electron-builder": "^25.1.8",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
