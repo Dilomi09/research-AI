@@ -1,5 +1,0 @@
-{
-  "name": "Mac AI Search",
-  "description": "A clean Mac-like app that uses Perplexity for search and OpenRouter (Minimax) for answer synthesis.",
-  "requestFramePermissions": []
-}
