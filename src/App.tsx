@@ -12,7 +12,7 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-white dark:bg-[#252525] text-gray-900 dark:text-gray-100 font-sans selection:bg-blue-200 dark:selection:bg-blue-900">
+    <div className="flex h-screen w-full overflow-hidden bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans selection:bg-blue-200 dark:selection:bg-blue-900/50">
       <Sidebar onOpenSettings={() => setIsSettingsOpen(true)} />
       <ChatArea onOpenSettings={() => setIsSettingsOpen(true)} />
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
