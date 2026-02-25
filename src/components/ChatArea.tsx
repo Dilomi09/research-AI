@@ -1,9 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Search, Sparkles, AlertCircle, Link as LinkIcon } from 'lucide-react';
+import { Send, Search, Sparkles, AlertCircle, Link as LinkIcon, ChevronDown, Check } from 'lucide-react';
 import { useStore, Message } from '../lib/store';
 import { searchWithPerplexity, synthesizeWithOpenRouter } from '../lib/api';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import clsx from 'clsx';
+
+const MODELS = [
+  { id: 'arcee-ai/trinity-large-preview:free', name: 'Trinity Large', description: 'Best for general tasks', price: 'Free' },
+  { id: 'z-ai/glm-5', name: 'GLM-5', description: 'Best for balanced tasks', price: '$$' },
+  { id: 'moonshotai/kimi-k2.5', name: 'Kimi K2.5', description: 'Best for long context', price: '$$$' },
+  { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash', description: 'Best for speed and reasoning', price: '$$$$' },
+  { id: 'minimax/minimax-m2.5', name: 'Minimax m2.5', description: 'Best for creative writing', price: '$$' },
+];
 
 export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
   const { 
@@ -14,18 +22,33 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
     updateMessage,
     perplexityKey,
     openRouterKey,
-    openRouterModel
+    openRouterModel,
+    deepResearch,
+    setDeepResearch,
+    setOpenRouterModel
   } = useStore();
   
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const currentChat = chats.find(c => c.id === currentChatId);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [currentChat?.messages]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsModelDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +86,7 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
 
     try {
       // Step 1: Search with Perplexity
-      const searchRes = await searchWithPerplexity(perplexityKey, userMessage.content);
+      const searchRes = await searchWithPerplexity(perplexityKey, userMessage.content, deepResearch);
       const searchResults = searchRes.choices?.[0]?.message?.content || '';
       const citations = searchRes.citations || [];
 
@@ -121,17 +144,6 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
         <h2 className="font-medium text-gray-800 dark:text-gray-200 truncate pr-4">
           {currentChat?.title}
         </h2>
-        <select
-          value={openRouterModel}
-          onChange={(e) => useStore.getState().setOpenRouterModel(e.target.value)}
-          className="bg-gray-50 dark:bg-[#1e1e1e] border border-gray-200 dark:border-gray-700 rounded-md px-2 py-1.5 text-xs text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 max-w-[150px] md:max-w-[200px] truncate"
-        >
-          <option value="arcee-ai/trinity-large-preview:free">Trinity Large (Free)</option>
-          <option value="z-ai/glm-5">GLM-5</option>
-          <option value="moonshotai/kimi-k2.5">Kimi K2.5</option>
-          <option value="google/gemini-3-flash-preview">Gemini 3 Flash</option>
-          <option value="minimax/minimax-m2.5">Minimax m2.5</option>
-        </select>
       </div>
       <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
         {currentChat?.messages.map((msg) => (
@@ -206,6 +218,75 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
 
       <div className="p-4 bg-white dark:bg-[#252525] border-t border-gray-100 dark:border-gray-800">
         <div className="max-w-3xl mx-auto relative">
+          <div className="flex items-center space-x-2 mb-2">
+            <div className="relative" ref={dropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
+                className="flex items-center space-x-1 px-3 py-1.5 bg-gray-50 dark:bg-[#1e1e1e] border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                <span className="truncate max-w-[120px]">
+                  {MODELS.find(m => m.id === openRouterModel)?.name || 'Select Model'}
+                </span>
+                <ChevronDown size={14} />
+              </button>
+
+              {isModelDropdownOpen && (
+                <div className="absolute bottom-full left-0 mb-2 w-72 bg-white dark:bg-[#252525] border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden z-50">
+                  <div className="p-2 space-y-1">
+                    {MODELS.map((model) => (
+                      <button
+                        key={model.id}
+                        onClick={() => {
+                          setOpenRouterModel(model.id);
+                          setIsModelDropdownOpen(false);
+                        }}
+                        className={clsx(
+                          "w-full text-left px-3 py-2 rounded-lg flex items-start justify-between group transition-colors",
+                          openRouterModel === model.id 
+                            ? "bg-blue-50 dark:bg-blue-900/20" 
+                            : "hover:bg-gray-50 dark:hover:bg-[#1e1e1e]"
+                        )}
+                      >
+                        <div className="flex-1 pr-2">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className={clsx(
+                              "text-sm font-medium",
+                              openRouterModel === model.id ? "text-blue-600 dark:text-blue-400" : "text-gray-900 dark:text-gray-100"
+                            )}>
+                              {model.name}
+                            </span>
+                            <span className="text-xs font-mono text-gray-500">{model.price}</span>
+                          </div>
+                          <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">
+                            {model.description}
+                          </p>
+                        </div>
+                        {openRouterModel === model.id && (
+                          <Check size={16} className="text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setDeepResearch(!deepResearch)}
+              className={clsx(
+                "flex items-center space-x-1.5 px-3 py-1.5 border rounded-lg text-xs font-medium transition-colors",
+                deepResearch 
+                  ? "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-400" 
+                  : "bg-gray-50 dark:bg-[#1e1e1e] border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+              )}
+            >
+              <Sparkles size={14} className={deepResearch ? "text-purple-500" : "text-gray-400"} />
+              <span>Deep Research</span>
+            </button>
+          </div>
+
           <form onSubmit={handleSubmit} className="relative flex items-end">
             <textarea
               value={input}

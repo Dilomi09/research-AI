@@ -20,11 +20,13 @@ interface AppState {
   perplexityKey: string;
   openRouterKey: string;
   openRouterModel: string;
+  deepResearch: boolean;
   chats: Chat[];
   currentChatId: string | null;
   setPerplexityKey: (key: string) => void;
   setOpenRouterKey: (key: string) => void;
   setOpenRouterModel: (model: string) => void;
+  setDeepResearch: (enabled: boolean) => void;
   createChat: () => string;
   setCurrentChatId: (id: string | null) => void;
   addMessage: (chatId: string, message: Message) => void;
@@ -38,11 +40,13 @@ export const useStore = create<AppState>()(
       perplexityKey: '',
       openRouterKey: '',
       openRouterModel: 'minimax/minimax-m2.5',
+      deepResearch: false,
       chats: [],
       currentChatId: null,
       setPerplexityKey: (key) => set({ perplexityKey: key }),
       setOpenRouterKey: (key) => set({ openRouterKey: key }),
       setOpenRouterModel: (model) => set({ openRouterModel: model }),
+      setDeepResearch: (enabled) => set({ deepResearch: enabled }),
       createChat: () => {
         const id = crypto.randomUUID();
         const newChat: Chat = {

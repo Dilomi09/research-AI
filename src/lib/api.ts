@@ -1,4 +1,4 @@
-export async function searchWithPerplexity(apiKey: string, prompt: string) {
+export async function searchWithPerplexity(apiKey: string, prompt: string, isDeepResearch: boolean = false) {
   const res = await fetch('https://api.perplexity.ai/chat/completions', {
     method: 'POST',
     headers: {
@@ -6,9 +6,9 @@ export async function searchWithPerplexity(apiKey: string, prompt: string) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: 'sonar',
+      model: isDeepResearch ? 'sonar-pro' : 'sonar',
       messages: [
-        { role: 'system', content: 'You are a search assistant. Provide detailed, factual information to answer the user query.' },
+        { role: 'system', content: 'You are a search assistant. Provide detailed, factual information to answer the user query. If the query requires deep research, pull as many sources as necessary to provide a comprehensive answer.' },
         { role: 'user', content: prompt }
       ]
     })
