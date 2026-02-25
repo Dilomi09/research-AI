@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Search, Sparkles, AlertCircle, Link as LinkIcon, ChevronDown, Check } from 'lucide-react';
+import { Send, Search, Sparkles, AlertCircle, Link as LinkIcon, ChevronDown, Check, Square, Pencil, Download, ChevronRight } from 'lucide-react';
 import { useStore, Message } from '../lib/store';
-import { searchWithPerplexity, synthesizeWithOpenRouter } from '../lib/api';
+import { searchWithPerplexity, searchWithTavily, synthesizeWithOpenRouter } from '../lib/api';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import clsx from 'clsx';
 
@@ -20,8 +20,12 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
     createChat, 
     addMessage, 
     updateMessage,
+    truncateChat,
     perplexityKey,
     openRouterKey,
+    tavilyKey,
+    searchProvider,
+    systemPrompt,
     openRouterModel,
     deepResearch,
     setDeepResearch,
@@ -31,8 +35,10 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const [expandedSearch, setExpandedSearch] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const currentChat = chats.find(c => c.id === currentChatId);
 
@@ -54,8 +60,20 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
     e.preventDefault();
     if (!input.trim() || isProcessing) return;
 
-    if (!perplexityKey || !openRouterKey) {
-      alert('Please configure your API keys in Settings first.');
+    if (!openRouterKey) {
+      alert('Please configure your OpenRouter API key in Settings first.');
+      onOpenSettings();
+      return;
+    }
+
+    if (searchProvider === 'perplexity' && !perplexityKey) {
+      alert('Please configure your Perplexity API key in Settings first.');
+      onOpenSettings();
+      return;
+    }
+
+    if (searchProvider === 'tavily' && !tavilyKey) {
+      alert('Please configure your Tavily API key in Settings first.');
       onOpenSettings();
       return;
     }
@@ -76,7 +94,7 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
       id: assistantMessageId,
       role: 'assistant',
       content: '',
-      status: 'searching',
+      status: searchProvider !== 'none' ? 'searching' : 'synthesizing',
     };
 
     addMessage(activeChatId, userMessage);
@@ -84,40 +102,95 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
     setInput('');
     setIsProcessing(true);
 
+    abortControllerRef.current = new AbortController();
+
     try {
-      // Step 1: Search with Perplexity
-      const searchRes = await searchWithPerplexity(perplexityKey, userMessage.content, deepResearch);
-      const searchResults = searchRes.choices?.[0]?.message?.content || '';
-      const citations = searchRes.citations || [];
+      let searchResults = '';
+      let citations: string[] = [];
+
+      if (searchProvider === 'perplexity') {
+        const searchRes = await searchWithPerplexity(perplexityKey, userMessage.content, deepResearch);
+        searchResults = searchRes.choices?.[0]?.message?.content || '';
+        citations = searchRes.citations || [];
+      } else if (searchProvider === 'tavily') {
+        const searchRes = await searchWithTavily(tavilyKey, userMessage.content, deepResearch);
+        searchResults = searchRes.content;
+        citations = searchRes.citations;
+      }
 
       updateMessage(activeChatId, assistantMessageId, { 
         status: 'synthesizing',
-        citations
+        citations,
+        searchResults
       });
 
-      // Step 2: Synthesize with OpenRouter (Minimax)
+      // Prepare history for OpenRouter
+      const currentChatState = useStore.getState().chats.find(c => c.id === activeChatId);
+      const history = currentChatState?.messages
+        .filter(m => m.id !== assistantMessageId && m.status === 'done')
+        .map(m => ({ role: m.role, content: m.content })) || [];
+
+      history.push({ role: 'user', content: userMessage.content });
+
       let fullContent = '';
       await synthesizeWithOpenRouter(
         openRouterKey,
         openRouterModel,
-        userMessage.content,
+        history as any,
         searchResults,
+        systemPrompt,
         (chunk) => {
           fullContent += chunk;
           updateMessage(activeChatId, assistantMessageId, { content: fullContent });
-        }
+        },
+        abortControllerRef.current.signal
       );
 
       updateMessage(activeChatId, assistantMessageId, { status: 'done' });
     } catch (error: any) {
-      console.error(error);
-      updateMessage(activeChatId, assistantMessageId, { 
-        status: 'error',
-        content: error.message || 'An error occurred during processing.'
-      });
+      if (error.name === 'AbortError') {
+        updateMessage(activeChatId, assistantMessageId, { status: 'done' });
+      } else {
+        console.error(error);
+        updateMessage(activeChatId, assistantMessageId, { 
+          status: 'error',
+          content: error.message || 'An error occurred during processing.'
+        });
+      }
     } finally {
       setIsProcessing(false);
+      abortControllerRef.current = null;
     }
+  };
+
+  const handleStop = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  };
+
+  const handleEdit = (messageId: string, content: string) => {
+    if (!currentChatId || isProcessing) return;
+    setInput(content);
+    truncateChat(currentChatId, messageId);
+  };
+
+  const handleExport = () => {
+    if (!currentChat) return;
+    let md = `# ${currentChat.title}\n\n`;
+    currentChat.messages.forEach(m => {
+      md += `### ${m.role === 'user' ? 'You' : 'Assistant'}\n${m.content}\n\n`;
+      if (m.citations && m.citations.length > 0) {
+        md += `**Sources:**\n${m.citations.map((c, i) => `[${i + 1}] ${c}`).join('\n')}\n\n`;
+      }
+    });
+    const blob = new Blob([md], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentChat.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   if (!currentChatId) {
@@ -144,20 +217,36 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
         <h2 className="font-medium text-gray-800 dark:text-gray-200 truncate pr-4">
           {currentChat?.title}
         </h2>
+        <button
+          onClick={handleExport}
+          className="p-1.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          title="Export Chat to Markdown"
+        >
+          <Download size={18} />
+        </button>
       </div>
       <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
         {currentChat?.messages.map((msg) => (
-          <div key={msg.id} className={clsx("flex flex-col max-w-3xl mx-auto", msg.role === 'user' ? 'items-end' : 'items-start')}>
+          <div key={msg.id} className={clsx("flex flex-col max-w-3xl mx-auto group", msg.role === 'user' ? 'items-end' : 'items-start')}>
             {msg.role === 'user' ? (
-              <div className="bg-gray-100 dark:bg-[#333333] text-gray-900 dark:text-gray-100 px-4 py-3 rounded-2xl rounded-tr-sm max-w-[85%]">
-                {msg.content}
+              <div className="flex items-center space-x-2 max-w-[85%]">
+                <button
+                  onClick={() => handleEdit(msg.id, msg.content)}
+                  className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+                  title="Edit and resubmit"
+                >
+                  <Pencil size={14} />
+                </button>
+                <div className="bg-gray-100 dark:bg-[#333333] text-gray-900 dark:text-gray-100 px-4 py-3 rounded-2xl rounded-tr-sm">
+                  {msg.content}
+                </div>
               </div>
             ) : (
               <div className="w-full">
                 {msg.status === 'searching' && (
                   <div className="flex items-center space-x-2 text-blue-500 mb-2 font-medium text-sm">
                     <Search size={16} className="animate-pulse" />
-                    <span>Searching the web with Perplexity...</span>
+                    <span>Searching the web with {searchProvider === 'tavily' ? 'Tavily' : 'Perplexity'}...</span>
                   </div>
                 )}
                 {msg.status === 'synthesizing' && (
@@ -175,6 +264,22 @@ export function ChatArea({ onOpenSettings }: { onOpenSettings: () => void }) {
                 
                 {msg.content && (
                   <div className="text-gray-800 dark:text-gray-200">
+                    {msg.searchResults && (
+                      <div className="mb-4 text-sm">
+                        <button
+                          onClick={() => setExpandedSearch(expandedSearch === msg.id ? null : msg.id)}
+                          className="flex items-center space-x-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                        >
+                          <ChevronRight size={14} className={clsx("transition-transform", expandedSearch === msg.id && "rotate-90")} />
+                          <span>View Search Context</span>
+                        </button>
+                        {expandedSearch === msg.id && (
+                          <div className="mt-2 p-3 bg-gray-50 dark:bg-[#1e1e1e] rounded-lg border border-gray-200 dark:border-gray-700 max-h-60 overflow-y-auto font-mono text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                            {msg.searchResults}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <MarkdownRenderer content={msg.content} citations={msg.citations} />
                   </div>
                 )}

@@ -6,6 +6,7 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
   citations?: string[];
+  searchResults?: string;
   status?: 'searching' | 'synthesizing' | 'done' | 'error';
 }
 
@@ -19,18 +20,25 @@ export interface Chat {
 interface AppState {
   perplexityKey: string;
   openRouterKey: string;
+  tavilyKey: string;
   openRouterModel: string;
+  searchProvider: 'perplexity' | 'tavily' | 'none';
+  systemPrompt: string;
   deepResearch: boolean;
   chats: Chat[];
   currentChatId: string | null;
   setPerplexityKey: (key: string) => void;
   setOpenRouterKey: (key: string) => void;
+  setTavilyKey: (key: string) => void;
   setOpenRouterModel: (model: string) => void;
+  setSearchProvider: (provider: 'perplexity' | 'tavily' | 'none') => void;
+  setSystemPrompt: (prompt: string) => void;
   setDeepResearch: (enabled: boolean) => void;
   createChat: () => string;
   setCurrentChatId: (id: string | null) => void;
   addMessage: (chatId: string, message: Message) => void;
   updateMessage: (chatId: string, messageId: string, update: Partial<Message>) => void;
+  truncateChat: (chatId: string, messageId: string) => void;
   deleteChat: (id: string) => void;
 }
 
@@ -39,13 +47,19 @@ export const useStore = create<AppState>()(
     (set) => ({
       perplexityKey: '',
       openRouterKey: '',
+      tavilyKey: '',
       openRouterModel: 'minimax/minimax-m2.5',
+      searchProvider: 'perplexity',
+      systemPrompt: '',
       deepResearch: false,
       chats: [],
       currentChatId: null,
       setPerplexityKey: (key) => set({ perplexityKey: key }),
       setOpenRouterKey: (key) => set({ openRouterKey: key }),
+      setTavilyKey: (key) => set({ tavilyKey: key }),
       setOpenRouterModel: (model) => set({ openRouterModel: model }),
+      setSearchProvider: (provider) => set({ searchProvider: provider }),
+      setSystemPrompt: (prompt) => set({ systemPrompt: prompt }),
       setDeepResearch: (enabled) => set({ deepResearch: enabled }),
       createChat: () => {
         const id = crypto.randomUUID();
@@ -89,6 +103,22 @@ export const useStore = create<AppState>()(
                 ),
                 updatedAt: Date.now(),
               };
+            }
+            return chat;
+          }),
+        })),
+      truncateChat: (chatId, messageId) =>
+        set((state) => ({
+          chats: state.chats.map((chat) => {
+            if (chat.id === chatId) {
+              const index = chat.messages.findIndex((m) => m.id === messageId);
+              if (index !== -1) {
+                return {
+                  ...chat,
+                  messages: chat.messages.slice(0, index),
+                  updatedAt: Date.now(),
+                };
+              }
             }
             return chat;
           }),

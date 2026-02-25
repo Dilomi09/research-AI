@@ -3,26 +3,38 @@ import { useStore } from '../lib/store';
 import { useState, useEffect } from 'react';
 
 export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const { perplexityKey, openRouterKey, openRouterModel, setPerplexityKey, setOpenRouterKey, setOpenRouterModel } = useStore();
+  const { 
+    perplexityKey, openRouterKey, tavilyKey, openRouterModel, searchProvider, systemPrompt,
+    setPerplexityKey, setOpenRouterKey, setTavilyKey, setOpenRouterModel, setSearchProvider, setSystemPrompt 
+  } = useStore();
   
   const [localPerplexity, setLocalPerplexity] = useState(perplexityKey);
   const [localOpenRouter, setLocalOpenRouter] = useState(openRouterKey);
+  const [localTavily, setLocalTavily] = useState(tavilyKey);
   const [localModel, setLocalModel] = useState(openRouterModel);
+  const [localSearchProvider, setLocalSearchProvider] = useState(searchProvider);
+  const [localSystemPrompt, setLocalSystemPrompt] = useState(systemPrompt);
 
   useEffect(() => {
     if (isOpen) {
       setLocalPerplexity(perplexityKey);
       setLocalOpenRouter(openRouterKey);
+      setLocalTavily(tavilyKey);
       setLocalModel(openRouterModel);
+      setLocalSearchProvider(searchProvider);
+      setLocalSystemPrompt(systemPrompt);
     }
-  }, [isOpen, perplexityKey, openRouterKey, openRouterModel]);
+  }, [isOpen, perplexityKey, openRouterKey, tavilyKey, openRouterModel, searchProvider, systemPrompt]);
 
   if (!isOpen) return null;
 
   const handleSave = () => {
     setPerplexityKey(localPerplexity);
     setOpenRouterKey(localOpenRouter);
+    setTavilyKey(localTavily);
     setOpenRouterModel(localModel);
+    setSearchProvider(localSearchProvider);
+    setSystemPrompt(localSystemPrompt);
     onClose();
   };
 
@@ -36,19 +48,51 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
           </button>
         </div>
         
-        <div className="p-4 space-y-4">
+        <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Perplexity API Key
+              Search Provider
             </label>
-            <input
-              type="password"
-              value={localPerplexity}
-              onChange={(e) => setLocalPerplexity(e.target.value)}
+            <select
+              value={localSearchProvider}
+              onChange={(e) => setLocalSearchProvider(e.target.value as any)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-transparent text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="pplx-..."
-            />
+            >
+              <option value="perplexity">Perplexity (Best Quality, $$)</option>
+              <option value="tavily">Tavily (Good Quality, Free Tier)</option>
+              <option value="none">None (Chat Only)</option>
+            </select>
           </div>
+
+          {localSearchProvider === 'perplexity' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Perplexity API Key
+              </label>
+              <input
+                type="password"
+                value={localPerplexity}
+                onChange={(e) => setLocalPerplexity(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-transparent text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="pplx-..."
+              />
+            </div>
+          )}
+
+          {localSearchProvider === 'tavily' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Tavily API Key
+              </label>
+              <input
+                type="password"
+                value={localTavily}
+                onChange={(e) => setLocalTavily(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-transparent text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="tvly-..."
+              />
+            </div>
+          )}
           
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -78,6 +122,19 @@ export function SettingsModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
               <option value="google/gemini-3-flash-preview">Gemini 3 Flash</option>
               <option value="minimax/minimax-m2.5">Minimax m2.5</option>
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Custom System Prompt (Optional)
+            </label>
+            <textarea
+              value={localSystemPrompt}
+              onChange={(e) => setLocalSystemPrompt(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-transparent text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              placeholder="e.g. Always answer like a pirate..."
+              rows={3}
+            />
           </div>
         </div>
 
