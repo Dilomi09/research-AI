@@ -1,50 +1,82 @@
-# 🔍 research-AI
+# Research-AI 🧠🎓
 
-> A lightweight, open-source AI research assistant powered by the Gemini API.
+A **free, lightweight Perplexity-style AI research assistant** with answers powered by **OpenRouter models**. Built for students and researchers who need high-quality answers without the premium price tag.
 
-## Why this exists
-Premium AI research tools like Perplexity Pro are incredible, but the $20/month subscription costs can add up quickly. If you are a student (tackling A-Levels, an EPQ, or university research) or just someone who does dozens of deep-dive web searches daily but can't justify a premium AI subscription, **research-AI** is built for you. 
+---
 
-It provides a clean, fast, "Perplexity-style" experience that synthesizes information and helps you research efficiently—completely for free. All you need is your own Gemini API key.
+## 📜 Table of Contents
+- [About](#about)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Download and Install](#download-and-install)
+- [Contributing](#contributing)
+- [License](#license)
 
-## Features
-- **Perplexity-style Synthesis:** Get clear, compiled answers to complex research questions.
-- **100% Free to Use:** Runs locally using your own free Gemini API key via Google AI Studio.
-- **Fast & Minimalist:** No bloat, just a clean interface optimized for deep-dive research and Mac workflows.
+---
 
-## Tech Stack
-- **Frontend:** TypeScript, HTML, CSS (Vite)
-- **AI Engine:** Google Gemini API 
-- **Framework:** Based on the Google AI Studio repository template
+## 🌟 About
+Research-AI is designed to deliver **accurate, fast, and reliable answers** to assist academic and practical research. Modeled after tools like Perplexity AI, the platform uses a combination of **Perplexity API, local knowledge bases, or direct queries** for research. Answers are generated using models available on **OpenRouter**, ensuring flexibility and quality.
 
+The project is optimized for **simplicity and accessibility**, making it ideal for students and researchers alike.
 
+---
 
-## Release targets (.exe, .dmg, .apk)
-This repository now includes a cross-platform release workflow at `.github/workflows/release.yml` that builds:
-- **Windows installer**: `.exe` (NSIS)
-- **macOS disk image**: `.dmg`
-- **Android package**: `.apk` (debug)
+## ⚡ Features
+- 🚀 **High-quality conversational answers** powered by **OpenRouter models**.
+- 🌐 **Integration with Perplexity API** and support for local knowledge bases.
+- 📚 **Ideal for researchers and students** with domain-specific queries.
+- 💡 **Lightweight and efficient** design for a responsive experience.
+- 📱 **Available as cross-platform apps** (`.exe`, `.dmg`, `.apk`) for easy installation.
+- 🌍 **Free and open-source**, ensuring accessibility for everyone.
 
-### Compatibility notes
-- Desktop releases are generated with **Electron** and package the same Vite build output for both Windows and macOS.
-- Android releases are generated with **Capacitor** on top of the same web bundle (`dist`), which keeps feature parity across platforms.
-- The workflow runs on native OS runners (`windows-latest`, `macos-latest`, `ubuntu-latest`) to avoid cross-compilation mismatches.
+---
 
+## 💻 Tech Stack
 
-For a full step-by-step build + launch walkthrough, see [`RELEASE_GUIDE.md`](./RELEASE_GUIDE.md).
+The project is primarily built with:
 
-### How to generate and upload releases
-1. **Create and push a version tag** (example `v0.2.0`):
+| Language       | Percentage |
+|----------------|------------|
+| TypeScript     | 98.9%      |
+| Other          | 1.1%       |
+
+TypeScript brings the power of **static typing** and **modern development tools** for building scalable and maintainable codebases.
+
+---
+
+## 📦 Download and Install
+
+We provide prebuilt applications for multiple platforms so you can use Research-AI without worrying about dependencies. Choose your platform below:
+
+- **Windows (.exe)**: [Download Here](https://github.com/Dilomi09/research-AI/releases)
+- **MacOS (.dmg)**: [Download Here](https://github.com/Dilomi09/research-AI/releases)
+- **Android (.apk)**: [Download Here](https://github.com/Dilomi09/research-AI/releases)
+
+Simply download the file for your platform and follow the prompts to install.
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! To make changes:
+1. Fork the repository.
+2. Create a feature branch:
    ```bash
-   git tag v0.2.0
-   git push origin v0.2.0
+   git checkout -b feature/my-feature
    ```
-2. GitHub Actions runs `.github/workflows/release.yml` and builds all three artifacts on native runners.
-3. The `publish-release` job automatically creates/updates a GitHub Release for that tag and uploads:
-   - `*.exe` (Windows installer)
-   - `*.dmg` (macOS image)
-   - `*.apk` (Android debug build)
-4. Open your repo’s **Releases** page and you’ll see the assets attached to `v0.2.0`.
+3. Make your changes and commit:
+   ```bash
+   git commit -m "My new feature"
+   ```
+4. Push your branch:
+   ```bash
+   git push origin feature/my-feature
+   ```
+5. Open a pull request.
 
-> If you only want to test builds without creating a Release, run the workflow with **workflow_dispatch**.
-> In that mode, files are kept as workflow artifacts (Actions tab), not release assets.
+## 💬 Feedback or Questions?
+
+If you have any suggestions, features you'd like to see, or if you'd like to report a bug:
+- [Open an issue](https://github.com/Dilomi09/research-AI/issues)
+
+Let’s make AI research accessible to all! 🌟
