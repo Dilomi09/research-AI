@@ -1,43 +1,50 @@
 # Research-AI 🧠🎓
 
-A **free, lightweight Perplexity-style AI research assistant** with answers powered by **OpenRouter models**. Built for students and researchers who need high-quality answers without the premium price tag.
+A **free, lightweight Perplexity-style AI research assistant** with answers powered by **OpenRouter models**. Built for students and researchers who need high-quality answers without the premium price tag. Matching Perplexity's features with better cost-efficiency.
 
 ---
 
-## 🚀 Recent Releases (v0.2.3)
+## 🚀 Latest Stable Release (v1.0.1)
 
-We have just released **v0.2.3**! You can find the latest installers for Windows, macOS, and Android on our **[GitHub Releases page](https://github.com/Dilomi09/research-AI/releases)**.
+The **v1.0.1** stable release is now live! You can find the latest installers for Windows, macOS, and Android on our **[GitHub Releases page](https://github.com/Dilomi09/research-AI/releases)**.
 
-- 🪟 **Windows**: `.exe` installer available.
-- 🍏 **macOS**: `.dmg` file for Apple Silicon and Intel.
-> [!WARNING]  
-> If macOS says the app is "damaged and can't be opened," this is a strict Apple security measure for unsigned apps, not a broken file. Open your Terminal and run:  
+- 🪟 **Windows**: `.exe` installer (Setup).
+- 🍏 **macOS**: `.dmg` file optimized for ARM (Apple Silicon) and Intel.
+- 🤖 **Android**: `.apk` build included in assets for the first time.
+
+> [!TIP]  
+> If macOS says the app is "damaged," run:  
 > `xattr -cr /Applications/research-AI.app`
-- 🤖 **Android**: `.apk` debug build for testing.
 
 ---
 
-## 🌟 Features
+## 🌟 Key Features
 
-- 🚀 **High-quality conversational answers** powered by **OpenRouter models**.
-- 🌐 **Integration with Perplexity API** and support for local knowledge bases.
-- 🎓 **Ideal for researchers and students** with domain-specific queries.
-- 💻 **Lightweight and efficient** design for a responsive experience.
-- 📱 **Available as cross-platform apps** (`.exe`, `.dmg`, `.apk`) for easy installation.
-- 🌍 **Free and open-source**, ensuring accessibility for everyone.
+- 📂 **Collections & Folders**: Organize your research chats into custom folders for better context management.
+- 🔍 **Search Domain Filters**: Restrict searches to specific sites (e.g., `github.com`, `reddit.com`) directly from the search bar.
+- 🤖 **Smart Model Routing**: High-reasoning models for synthesis, while using hyper-efficient `Gemini 2.0 Flash` for follow-up generation to save costs.
+- ✅ **Source Verification**: All answers include direct citations with "Verified" badges and links to original search results.
+- 💬 **Suggested Questions**: AI proactively suggests 3 follow-up deep-dive questions based on current context.
+- 📱 **Cross-Platform**: Native-feeling experience on Desktop and Mobile.
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Framework**: Vite + TypeScript
-- **Styling**: Tailwind CSS
-- **App Packaging**: Electron (Desktop) & Capacitor (Mobile)
-- **AI Models**: OpenRouter API
+- **Framework**: Vite + React + TypeScript
+- **Styling**: Tailwind CSS + Framer Motion
+- **App Packaging**: Electron (Desktop) & Capacitor (Android)
+- **AI Infrastructure**: OpenRouter (Synthesis) + Perplexity/Tavily (Search)
+
+---
+
+## ⚖️ License
+
+Distributed under the **MIT License**. See `LICENSE` for more information.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Feel free to open issues or submit pull requests to help improve Research-AI.
+Contributions are welcome! Feel free to open issues or submit pull requests.
 
