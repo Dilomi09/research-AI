@@ -41,8 +41,3 @@ We have just released **v0.2.3**! You can find the latest installers for Windows
 
 Contributions are welcome! Feel free to open issues or submit pull requests to help improve Research-AI.
 
----
-
-## 📄 License
-
-This project is licensed under the MIT License.
