@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, Search, Sparkles, AlertCircle, Link as LinkIcon, ChevronDown, Check, Square, Pencil, Download, ChevronRight, Menu, Paperclip, X } from 'lucide-react';
 import { Browser } from '@capacitor/browser';
 import { useStore, Message, Attachment } from '../lib/store';
-import { searchWithPerplexity, searchWithTavily, synthesizeWithOpenRouter } from '../lib/api';
+import { searchWithPerplexity, searchWithTavily, synthesizeWithOpenRouter, generateRelatedQuestions } from '../lib/api';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { TableOfContents } from './TableOfContents';
 import { motion, AnimatePresence } from 'motion/react';
@@ -209,6 +209,18 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
       );
 
       updateMessage(activeChatId, assistantMessageId, { status: 'done' });
+
+      // Generate suggested follow-up questions
+      const suggestions = await generateRelatedQuestions(
+        openRouterKey,
+        openRouterModel,
+        history as any,
+        fullContent
+      );
+
+      if (suggestions.length > 0) {
+        updateMessage(activeChatId, assistantMessageId, { suggestedQuestions: suggestions });
+      }
     } catch (error: any) {
       if (error.name === 'AbortError') {
         updateMessage(activeChatId, assistantMessageId, { status: 'done' });
@@ -324,10 +336,12 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
                       </button>
                       <div className="bg-white dark:bg-[#222222] text-zinc-900 dark:text-zinc-100 px-5 py-3.5 rounded-3xl rounded-tr-sm text-[15px] leading-relaxed shadow-sm ring-1 ring-black/5 dark:ring-white/5">
                         {msg.attachments && msg.attachments.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mb-3">
+                          <div className="flex flex-wrap gap-2 mb-4">
                             {msg.attachments.map(att => (
-                              <div key={att.id} className="flex items-center space-x-1.5 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-300">
-                                <Paperclip size={12} />
+                              <div key={att.id} className="flex items-center space-x-2 bg-zinc-100 dark:bg-zinc-800/80 px-3 py-2 rounded-2xl text-[11px] font-bold text-zinc-600 dark:text-zinc-300 ring-1 ring-black/5 shadow-sm">
+                                <div className="w-6 h-6 rounded-lg bg-white dark:bg-zinc-900 flex items-center justify-center shadow-inner">
+                                  <Paperclip size={12} className="text-blue-500" />
+                                </div>
                                 <span className="truncate max-w-[150px]">{att.name}</span>
                               </div>
                             ))}
@@ -377,11 +391,47 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
                           )}
                           <MarkdownRenderer content={msg.content} citations={msg.citations} />
 
+                          {msg.suggestedQuestions && msg.suggestedQuestions.length > 0 && (
+                            <div className="mt-8 space-y-3">
+                              <div className="flex items-center space-x-2 px-1">
+                                <Sparkles size={12} className="text-zinc-400" />
+                                <h4 className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">Suggested Follow-ups</h4>
+                              </div>
+                              <div className="flex flex-col space-y-2">
+                                {msg.suggestedQuestions.map((q, idx) => (
+                                  <button
+                                    key={idx}
+                                    onClick={() => {
+                                      setInput(q);
+                                      setTimeout(() => {
+                                        const form = document.querySelector('form');
+                                        if (form) {
+                                          const event = new Event('submit', { cancelable: true, bubbles: true });
+                                          form.dispatchEvent(event);
+                                        }
+                                      }, 50);
+                                    }}
+                                    className="w-full text-left px-4 py-3 bg-white dark:bg-[#222222] border border-black/5 dark:border-white/5 rounded-2xl text-[13px] text-zinc-600 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500/20 dark:hover:border-blue-500/30 hover:bg-blue-50/30 dark:hover:bg-blue-500/5 transition-all group flex items-center justify-between shadow-sm"
+                                  >
+                                    <span>{q}</span>
+                                    <ChevronRight size={14} className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-blue-500" />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
                           {msg.citations && msg.citations.length > 0 && (
-                            <div className="mt-6 pt-4 border-t border-black/5 dark:border-white/5">
-                              <h4 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider mb-3 flex items-center">
-                                <LinkIcon size={12} className="mr-1.5" /> Sources
-                              </h4>
+                            <div className="mt-8 pt-6 border-t border-black/5 dark:border-white/5">
+                              <div className="flex items-center justify-between mb-4">
+                                <h4 className="text-[11px] font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-widest flex items-center">
+                                  <LinkIcon size={12} className="mr-2 text-blue-500" /> Sources
+                                </h4>
+                                <div className="flex items-center space-x-1.5 px-2 py-0.5 bg-green-50 dark:bg-green-500/10 border border-green-200/50 dark:border-green-500/20 rounded-full text-[10px] font-bold text-green-600 dark:text-green-400 uppercase tracking-tight">
+                                  <Check size={10} strokeWidth={3} />
+                                  <span>Verified</span>
+                                </div>
+                              </div>
                               <div className="flex flex-wrap gap-2">
                                 {msg.citations.map((url, i) => {
                                   try {
@@ -393,10 +443,10 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
                                           e.preventDefault();
                                           await Browser.open({ url });
                                         }}
-                                        className="group inline-flex items-center px-3 py-2 bg-white dark:bg-[#222222] border border-black/5 dark:border-white/5 rounded-xl text-xs text-zinc-600 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500/30 dark:hover:border-blue-500/30 hover:shadow-md transition-all max-w-[220px]"
+                                        className="group inline-flex items-center px-3 py-2 bg-white dark:bg-[#222222] border border-black/5 dark:border-white/5 rounded-xl text-xs text-zinc-600 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500/20 dark:hover:border-blue-500/30 hover:shadow-md hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all max-w-[220px]"
                                         title={url}
                                       >
-                                        <span className="mr-2 text-[10px] bg-[#F9F9F9] dark:bg-[#111111] text-zinc-500 dark:text-zinc-400 w-5 h-5 rounded-full flex items-center justify-center shrink-0 group-hover:bg-blue-50 dark:group-hover:bg-blue-500/10 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{i + 1}</span>
+                                        <span className="mr-2 text-[10px] bg-[#F9F9F9] dark:bg-[#111111] text-zinc-500 dark:text-zinc-400 w-5 h-5 rounded-full flex items-center justify-center shrink-0 group-hover:bg-blue-50 dark:group-hover:bg-blue-500/10 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors font-bold shadow-sm ring-1 ring-black/5">{i + 1}</span>
                                         <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=16`} alt="" className="w-3.5 h-3.5 mr-2 rounded-sm opacity-70 group-hover:opacity-100 transition-opacity shrink-0" />
                                         <span className="truncate font-medium">{domain}</span>
                                       </button>

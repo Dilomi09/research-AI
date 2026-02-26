@@ -17,6 +17,7 @@ export interface Message {
   searchResults?: string;
   status?: 'searching' | 'synthesizing' | 'done' | 'error';
   attachments?: Attachment[];
+  suggestedQuestions?: string[];
 }
 
 export interface Chat {

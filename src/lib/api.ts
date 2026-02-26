@@ -151,3 +151,43 @@ export async function synthesizeWithOpenRouter(
     }
   }
 }
+
+export async function generateRelatedQuestions(
+  apiKey: string,
+  model: string,
+  messages: { role: 'user' | 'assistant' | 'system', content: string }[],
+  lastResponse: string
+) {
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey.trim()}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': window.location.origin === 'http://localhost' ? 'https://researchai.app' : window.location.origin,
+      'X-Title': 'Mac AI Search'
+    },
+    body: JSON.stringify({
+      model: model,
+      messages: [
+        {
+          role: 'system',
+          content: 'Based on the user query and the last assistant response, generate 3 follow-up questions that are short, relevant, and help the user explore the topic deeper. Return only a JSON array of 3 strings. Example: ["How does X affect Y?", "What are the alternatives to Z?", "Tell me more about the history of A."]'
+        },
+        ...messages.slice(-4),
+        { role: 'assistant', content: lastResponse }
+      ],
+      response_format: { type: "json_object" }
+    })
+  });
+
+  if (!res.ok) return [];
+
+  try {
+    const data = await res.json();
+    const content = data.choices[0].message.content;
+    const parsed = JSON.parse(content);
+    return Array.isArray(parsed) ? parsed : Object.values(parsed).find(v => Array.isArray(v)) || [];
+  } catch (e) {
+    return [];
+  }
+}
