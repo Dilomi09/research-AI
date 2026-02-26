@@ -59,7 +59,7 @@ jobs:
       - uses: android-actions/setup-android@v3
       - run: npm ci || npm ci || npm ci
       - run: npm run build
-      - run: npm install --no-save @capacitor/cli@7 @capacitor/core@7 @capacitor/android@7
+      - run: npm install --no-save @capacitor/cli@^6 @capacitor/core@^6 @capacitor/android@^6
       - run: npx cap add android || true
       - run: npx cap sync android
       - run: cd android && ./gradlew assembleDebug
