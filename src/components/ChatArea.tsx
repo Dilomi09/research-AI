@@ -32,8 +32,10 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
     systemPrompt,
     openRouterModel,
     deepResearch,
+    searchDomain,
     setDeepResearch,
-    setOpenRouterModel
+    setOpenRouterModel,
+    setSearchDomain
   } = useStore();
 
   const [input, setInput] = useState('');
@@ -142,6 +144,11 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
       activeChatId = createChat();
     }
 
+    let query = input.trim();
+    if (searchDomain) {
+      query = `${input.trim()} site:${searchDomain}`;
+    }
+
     const userMessage: Message = {
       id: crypto.randomUUID(),
       role: 'user',
@@ -171,11 +178,11 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
       let citations: string[] = [];
 
       if (searchProvider === 'perplexity') {
-        const searchRes = await searchWithPerplexity(perplexityKey, userMessage.content, deepResearch);
+        const searchRes = await searchWithPerplexity(perplexityKey, query, deepResearch);
         searchResults = searchRes.choices?.[0]?.message?.content || '';
         citations = searchRes.citations || [];
       } else if (searchProvider === 'tavily') {
-        const searchRes = await searchWithTavily(tavilyKey, userMessage.content, deepResearch);
+        const searchRes = await searchWithTavily(tavilyKey, query, deepResearch);
         searchResults = searchRes.content;
         citations = searchRes.citations;
       }
@@ -205,6 +212,7 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
           fullContent += chunk;
           updateMessage(activeChatId, assistantMessageId, { content: fullContent });
         },
+        searchDomain,
         abortControllerRef.current.signal
       );
 
@@ -215,7 +223,8 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
         openRouterKey,
         openRouterModel,
         history as any,
-        fullContent
+        fullContent,
+        searchDomain
       );
 
       if (suggestions.length > 0) {
@@ -554,6 +563,22 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
               <Sparkles size={14} className={deepResearch ? "text-purple-500" : "text-zinc-400"} />
               <span>Deep Research</span>
             </button>
+
+            <div className="flex items-center space-x-2 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-full ring-1 ring-black/5 dark:ring-white/5 shadow-sm">
+              <Search size={10} />
+              <input
+                type="text"
+                placeholder="Domain Filter (site:)"
+                value={searchDomain}
+                onChange={(e) => setSearchDomain(e.target.value)}
+                className="bg-transparent border-none outline-none text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400/50 ml-1 w-32"
+              />
+              {searchDomain && (
+                <button onClick={() => setSearchDomain('')} className="hover:text-red-500">
+                  <X size={10} />
+                </button>
+              )}
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="relative flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.06)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] rounded-3xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-800/50 transition-all focus-within:ring-2 focus-within:ring-blue-500/20">

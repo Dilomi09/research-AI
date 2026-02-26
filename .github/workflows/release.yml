@@ -60,7 +60,7 @@ jobs:
       - run: npm ci || npm ci || npm ci
       - run: npm run build
       - run: npm install --no-save @capacitor/cli@7 @capacitor/core@7 @capacitor/android@7
-      - run: npx cap add android
+      - run: npx cap add android || true
       - run: npx cap sync android
       - run: cd android && ./gradlew assembleDebug
       - run: mkdir -p release-assets && cp android/app/build/outputs/apk/debug/app-debug.apk release-assets/research-ai-android-debug.apk
@@ -94,7 +94,7 @@ jobs:
       - name: Publish GitHub release with assets
         uses: softprops/action-gh-release@v2
         with:
-          prerelease: true
+          prerelease: false
           files: |
             release-assets/research-ai-windows-exe/*.exe
             release-assets/research-ai-macos-dmg/*.dmg
