@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Search, Sparkles, AlertCircle, Link as LinkIcon, ChevronDown, Check, Square, Pencil, Download, ChevronRight, Menu, Paperclip, X } from 'lucide-react';
+import { Browser } from '@capacitor/browser';
 import { useStore, Message, Attachment } from '../lib/store';
 import { searchWithPerplexity, searchWithTavily, synthesizeWithOpenRouter } from '../lib/api';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -17,11 +18,11 @@ const MODELS = [
 ];
 
 export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () => void, onMenuClick: () => void }) {
-  const { 
-    chats, 
-    currentChatId, 
-    createChat, 
-    addMessage, 
+  const {
+    chats,
+    currentChatId,
+    createChat,
+    addMessage,
     updateMessage,
     truncateChat,
     perplexityKey,
@@ -34,14 +35,14 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
     setDeepResearch,
     setOpenRouterModel
   } = useStore();
-  
+
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [expandedSearch, setExpandedSearch] = useState<string | null>(null);
   const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -81,7 +82,7 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const isText = file.type.startsWith('text/') || file.name.endsWith('.md') || file.name.endsWith('.csv') || file.name.endsWith('.json');
-      
+
       try {
         const data = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
@@ -179,7 +180,7 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
         citations = searchRes.citations;
       }
 
-      updateMessage(activeChatId, assistantMessageId, { 
+      updateMessage(activeChatId, assistantMessageId, {
         status: 'synthesizing',
         citations,
         searchResults
@@ -213,7 +214,7 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
         updateMessage(activeChatId, assistantMessageId, { status: 'done' });
       } else {
         console.error(error);
-        updateMessage(activeChatId, assistantMessageId, { 
+        updateMessage(activeChatId, assistantMessageId, {
           status: 'error',
           content: error.message || 'An error occurred during processing.'
         });
@@ -262,7 +263,7 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
         <p className="max-w-md text-center text-sm text-zinc-500 dark:text-zinc-400">
           Search the web with Perplexity or Tavily, and synthesize answers with top-tier models via OpenRouter.
         </p>
-        <button 
+        <button
           onClick={() => createChat()}
           className="mt-8 px-6 py-2.5 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-full hover:bg-zinc-800 dark:hover:bg-white transition-colors font-medium text-sm shadow-sm"
         >
@@ -273,7 +274,7 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
   }
 
   return (
-      <div className="flex-1 flex flex-col bg-zinc-50 dark:bg-zinc-950 h-full relative overflow-hidden">
+    <div className="flex-1 flex flex-col bg-zinc-50 dark:bg-zinc-950 h-full relative overflow-hidden pt-[env(safe-area-inset-top,0px)]">
       <div className="h-14 border-b border-zinc-200 dark:border-zinc-800/50 flex items-center justify-between px-4 md:px-6 shrink-0 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-md z-10">
         <div className="flex items-center space-x-3 overflow-hidden">
           <button
@@ -294,9 +295,9 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
           <Download size={16} />
         </button>
       </div>
-      
+
       <div className="flex-1 flex overflow-hidden relative">
-        <div 
+        <div
           id="chat-scroll-container"
           ref={scrollContainerRef}
           onScroll={handleScroll}
@@ -305,113 +306,114 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
           <div className="max-w-3xl mx-auto space-y-8">
             <AnimatePresence initial={false}>
               {currentChat?.messages.map((msg) => (
-                <motion.div 
-                  key={msg.id} 
+                <motion.div
+                  key={msg.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
                   className={clsx("flex flex-col group", msg.role === 'user' ? 'items-end' : 'items-start')}
                 >
                   {msg.role === 'user' ? (
-                  <div className="flex items-center space-x-2 max-w-[85%]">
-                    <button
-                      onClick={() => handleEdit(msg.id, msg.content)}
-                      className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                      title="Edit and resubmit"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <div className="bg-white dark:bg-[#222222] text-zinc-900 dark:text-zinc-100 px-5 py-3.5 rounded-3xl rounded-tr-sm text-[15px] leading-relaxed shadow-sm ring-1 ring-black/5 dark:ring-white/5">
-                      {msg.attachments && msg.attachments.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {msg.attachments.map(att => (
-                            <div key={att.id} className="flex items-center space-x-1.5 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-300">
-                              <Paperclip size={12} />
-                              <span className="truncate max-w-[150px]">{att.name}</span>
-                            </div>
-                          ))}
+                    <div className="flex items-center space-x-2 max-w-[85%]">
+                      <button
+                        onClick={() => handleEdit(msg.id, msg.content)}
+                        className="p-1.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 opacity-0 group-hover:opacity-100 transition-opacity rounded-md hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                        title="Edit and resubmit"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <div className="bg-white dark:bg-[#222222] text-zinc-900 dark:text-zinc-100 px-5 py-3.5 rounded-3xl rounded-tr-sm text-[15px] leading-relaxed shadow-sm ring-1 ring-black/5 dark:ring-white/5">
+                        {msg.attachments && msg.attachments.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {msg.attachments.map(att => (
+                              <div key={att.id} className="flex items-center space-x-1.5 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-600 dark:text-zinc-300">
+                                <Paperclip size={12} />
+                                <span className="truncate max-w-[150px]">{att.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {msg.content}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="w-full">
+                      {msg.status === 'searching' && (
+                        <div className="flex items-center space-x-3 text-blue-500 mb-3 font-medium text-sm bg-white dark:bg-[#222222] ring-1 ring-black/5 dark:ring-white/5 shadow-sm w-fit px-4 py-2 rounded-full">
+                          <Search size={14} className="animate-pulse" />
+                          <span>Searching the web with {searchProvider === 'tavily' ? 'Tavily' : 'Perplexity'}...</span>
                         </div>
                       )}
-                      {msg.content}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="w-full">
-                    {msg.status === 'searching' && (
-                      <div className="flex items-center space-x-3 text-blue-500 mb-3 font-medium text-sm bg-white dark:bg-[#222222] ring-1 ring-black/5 dark:ring-white/5 shadow-sm w-fit px-4 py-2 rounded-full">
-                        <Search size={14} className="animate-pulse" />
-                        <span>Searching the web with {searchProvider === 'tavily' ? 'Tavily' : 'Perplexity'}...</span>
-                      </div>
-                    )}
-                    {msg.status === 'synthesizing' && (
-                      <div className="flex items-center space-x-3 text-purple-500 mb-3 font-medium text-sm bg-white dark:bg-[#222222] ring-1 ring-black/5 dark:ring-white/5 shadow-sm w-fit px-4 py-2 rounded-full">
-                        <Sparkles size={14} className="animate-pulse" />
-                        <span>Synthesizing answer with {openRouterModel}...</span>
-                      </div>
-                    )}
-                    {msg.status === 'error' && (
-                      <div className="flex items-center space-x-3 text-red-500 mb-3 font-medium text-sm bg-white dark:bg-[#222222] ring-1 ring-black/5 dark:ring-white/5 shadow-sm w-fit px-4 py-2 rounded-full">
-                        <AlertCircle size={14} />
-                        <span>Error occurred</span>
-                      </div>
-                    )}
-                    
-                    {msg.content && (
-                      <div className="text-zinc-800 dark:text-zinc-200 text-[15px] leading-relaxed">
-                        {msg.searchResults && (
-                          <div className="mb-6 text-sm">
-                            <button
-                              onClick={() => setExpandedSearch(expandedSearch === msg.id ? null : msg.id)}
-                              className="flex items-center space-x-1.5 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors font-medium bg-zinc-100 dark:bg-zinc-800/50 px-3 py-1.5 rounded-full"
-                            >
-                              <ChevronRight size={14} className={clsx("transition-transform", expandedSearch === msg.id && "rotate-90")} />
-                              <span>View Search Context</span>
-                            </button>
-                            {expandedSearch === msg.id && (
-                              <div className="mt-3 p-4 bg-white dark:bg-[#111] rounded-xl border border-black/5 dark:border-white/5 max-h-80 overflow-y-auto font-mono text-[11px] text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap shadow-inner">
-                                {msg.searchResults}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        <MarkdownRenderer content={msg.content} citations={msg.citations} />
-                        
-                        {msg.citations && msg.citations.length > 0 && (
-                          <div className="mt-6 pt-4 border-t border-black/5 dark:border-white/5">
-                            <h4 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider mb-3 flex items-center">
-                              <LinkIcon size={12} className="mr-1.5" /> Sources
-                            </h4>
-                            <div className="flex flex-wrap gap-2">
-                              {msg.citations.map((url, i) => {
-                                try {
-                                  const domain = new URL(url).hostname.replace('www.', '');
-                                  return (
-                                    <a 
-                                      key={i} 
-                                      href={url} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="group inline-flex items-center px-3 py-2 bg-white dark:bg-[#222222] border border-black/5 dark:border-white/5 rounded-xl text-xs text-zinc-600 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500/30 dark:hover:border-blue-500/30 hover:shadow-md transition-all max-w-[220px]"
-                                      title={url}
-                                    >
-                                      <span className="mr-2 text-[10px] bg-[#F9F9F9] dark:bg-[#111111] text-zinc-500 dark:text-zinc-400 w-5 h-5 rounded-full flex items-center justify-center shrink-0 group-hover:bg-blue-50 dark:group-hover:bg-blue-500/10 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{i + 1}</span>
-                                      <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=16`} alt="" className="w-3.5 h-3.5 mr-2 rounded-sm opacity-70 group-hover:opacity-100 transition-opacity shrink-0" />
-                                      <span className="truncate font-medium">{domain}</span>
-                                    </a>
-                                  );
-                                } catch (e) {
-                                  return null;
-                                }
-                              })}
+                      {msg.status === 'synthesizing' && (
+                        <div className="flex items-center space-x-3 text-purple-500 mb-3 font-medium text-sm bg-white dark:bg-[#222222] ring-1 ring-black/5 dark:ring-white/5 shadow-sm w-fit px-4 py-2 rounded-full">
+                          <Sparkles size={14} className="animate-pulse" />
+                          <span>Synthesizing answer with {openRouterModel}...</span>
+                        </div>
+                      )}
+                      {msg.status === 'error' && (
+                        <div className="flex items-center space-x-3 text-red-500 mb-3 font-medium text-sm bg-white dark:bg-[#222222] ring-1 ring-black/5 dark:ring-white/5 shadow-sm w-fit px-4 py-2 rounded-full">
+                          <AlertCircle size={14} />
+                          <span>Error occurred</span>
+                        </div>
+                      )}
+
+                      {msg.content && (
+                        <div className="text-zinc-800 dark:text-zinc-200 text-[15px] leading-relaxed">
+                          {msg.searchResults && (
+                            <div className="mb-6 text-sm">
+                              <button
+                                onClick={() => setExpandedSearch(expandedSearch === msg.id ? null : msg.id)}
+                                className="flex items-center space-x-1.5 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors font-medium bg-zinc-100 dark:bg-zinc-800/50 px-3 py-1.5 rounded-full"
+                              >
+                                <ChevronRight size={14} className={clsx("transition-transform", expandedSearch === msg.id && "rotate-90")} />
+                                <span>View Search Context</span>
+                              </button>
+                              {expandedSearch === msg.id && (
+                                <div className="mt-3 p-4 bg-white dark:bg-[#111] rounded-xl border border-black/5 dark:border-white/5 max-h-80 overflow-y-auto font-mono text-[11px] text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap shadow-inner">
+                                  {msg.searchResults}
+                                </div>
+                              )}
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </motion.div>
-            ))}
+                          )}
+                          <MarkdownRenderer content={msg.content} citations={msg.citations} />
+
+                          {msg.citations && msg.citations.length > 0 && (
+                            <div className="mt-6 pt-4 border-t border-black/5 dark:border-white/5">
+                              <h4 className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 uppercase tracking-wider mb-3 flex items-center">
+                                <LinkIcon size={12} className="mr-1.5" /> Sources
+                              </h4>
+                              <div className="flex flex-wrap gap-2">
+                                {msg.citations.map((url, i) => {
+                                  try {
+                                    const domain = new URL(url).hostname.replace('www.', '');
+                                    return (
+                                      <button
+                                        key={i}
+                                        onClick={async (e) => {
+                                          e.preventDefault();
+                                          await Browser.open({ url });
+                                        }}
+                                        className="group inline-flex items-center px-3 py-2 bg-white dark:bg-[#222222] border border-black/5 dark:border-white/5 rounded-xl text-xs text-zinc-600 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-500/30 dark:hover:border-blue-500/30 hover:shadow-md transition-all max-w-[220px]"
+                                        title={url}
+                                      >
+                                        <span className="mr-2 text-[10px] bg-[#F9F9F9] dark:bg-[#111111] text-zinc-500 dark:text-zinc-400 w-5 h-5 rounded-full flex items-center justify-center shrink-0 group-hover:bg-blue-50 dark:group-hover:bg-blue-500/10 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{i + 1}</span>
+                                        <img src={`https://www.google.com/s2/favicons?domain=${domain}&sz=16`} alt="" className="w-3.5 h-3.5 mr-2 rounded-sm opacity-70 group-hover:opacity-100 transition-opacity shrink-0" />
+                                        <span className="truncate font-medium">{domain}</span>
+                                      </button>
+                                    );
+                                  } catch (e) {
+                                    return null;
+                                  }
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </motion.div>
+              ))}
             </AnimatePresence>
             <div ref={messagesEndRef} className="h-48 shrink-0" />
           </div>
@@ -425,7 +427,7 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
 
       {/* Floating Input Area */}
       <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-zinc-50 via-zinc-50/90 to-transparent dark:from-zinc-950 dark:via-zinc-950/90 dark:to-transparent pointer-events-none z-20">
-        <motion.div 
+        <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.1, duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
@@ -461,7 +463,7 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
                         className={clsx(
                           "w-full text-left px-3 py-2.5 rounded-xl flex items-start justify-between group transition-colors",
                           (openRouterModel === model.id || (model.id === 'custom' && !MODELS.find(m => m.id === openRouterModel && m.id !== 'custom')))
-                            ? "bg-blue-50 dark:bg-blue-500/10" 
+                            ? "bg-blue-50 dark:bg-blue-500/10"
                             : "hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
                         )}
                       >
@@ -494,8 +496,8 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
               onClick={() => setDeepResearch(!deepResearch)}
               className={clsx(
                 "flex items-center space-x-1.5 px-3.5 py-1.5 border rounded-full text-xs font-medium transition-colors shadow-sm",
-                deepResearch 
-                  ? "bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30 text-purple-700 dark:text-purple-400" 
+                deepResearch
+                  ? "bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30 text-purple-700 dark:text-purple-400"
                   : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800"
               )}
             >
@@ -519,12 +521,12 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
               </div>
             )}
             <div className="relative flex items-end w-full">
-              <input 
-                type="file" 
-                multiple 
-                ref={fileInputRef} 
-                onChange={handleFileSelect} 
-                className="hidden" 
+              <input
+                type="file"
+                multiple
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                className="hidden"
               />
               <button
                 type="button"
@@ -575,13 +577,13 @@ export function ChatArea({ onOpenSettings, onMenuClick }: { onOpenSettings: () =
               )}
             </div>
           </form>
-            <div className="text-center mt-3">
-              <span className="text-[11px] text-zinc-400 dark:text-zinc-500 font-medium tracking-wide">
-                AI can make mistakes. Check important info.
-              </span>
-            </div>
+          <div className="text-center mt-3">
+            <span className="text-[11px] text-zinc-400 dark:text-zinc-500 font-medium tracking-wide">
+              AI can make mistakes. Check important info.
+            </span>
+          </div>
         </motion.div>
       </div>
-    </div>
+    </div >
   );
 }
