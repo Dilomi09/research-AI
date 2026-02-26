@@ -18,7 +18,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci || npm ci || npm ci
+      - run: npm install
       - run: npm run build
       - run: npm install --no-save electron@37 electron-builder@25
       - run: npx electron-builder --config electron-builder.yml --win nsis --publish never
@@ -35,7 +35,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci || npm ci || npm ci
+      - run: npm install
       - run: npm run build
       - run: npm install --no-save electron@37 electron-builder@25
       - run: npx electron-builder --config electron-builder.yml --mac dmg --publish never
@@ -57,7 +57,7 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: android-actions/setup-android@v3
-      - run: npm ci || npm ci || npm ci
+      - run: npm install
       - run: npm run build
       - run: npm install --no-save @capacitor/cli@^6 @capacitor/core@^6 @capacitor/android@^6
       - run: npx cap add android || true
